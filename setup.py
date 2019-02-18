@@ -10,7 +10,7 @@ setup(
     packages=["pygef"],
     install_requires=[
         "pandas",
-        "numpy"
+        "numpy",
     ],
     python_requires=">=3.4"
 )
