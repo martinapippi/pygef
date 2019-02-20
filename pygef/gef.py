@@ -3,6 +3,7 @@ import pandas as pd
 import io
 import numpy as np
 from pygef.robertson import RobertsonClassifier
+from pygef.been_jeffrey import BeenJeffrey
 from pygef.plot_cpt import PlotCPT
 
 COLUMN_NAMES_CPT = ["penetration_length",  # 1
@@ -303,9 +304,14 @@ class ParseCPT:
     def classify_robertson(self, new=True):  # True to use the new robertson
         m = RobertsonClassifier(self)
         if new:
-            self.df_clean = m.classify()
+            m.classify()
         else:
-            self.df_clean = m.classify(new=False)
+            m.classify(new=False)
+        return m
+
+    def classify_been_jeffrey(self):
+        m = BeenJeffrey(self)
+        m.classify()
         return m
 
     def plot_cpt(self):
