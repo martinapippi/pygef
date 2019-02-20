@@ -23,6 +23,11 @@ class BeenJeffrey:
         self.fs = gef.df['fs']
         self.pre_excavated_depth = gef.pre_excavated_depth
         zid = gef.zid
+        try:
+            self.u2 = gef.df['u2']
+        except KeyError:
+            raise SystemExit("ERROR: u2 not defined in .gef file, change classifier")
+
         self.water_level = zid - water_level_NAP
 
         # qt
@@ -43,13 +48,14 @@ class BeenJeffrey:
         for i, depth in enumerate(self.depth):
             qti = self.qt[i]
             fsi = self.fs[i]
+            u2i = self.u2[i]
             ui = u[i]
             if i == 0:  # add the check for the pre-excavation
                 if self.pre_excavated_depth is not None:
                     sigma_v0i = 18 * self.pre_excavated_depth  # use of a standard gamma=18 for the excavated soil
                 else:
                     sigma_v0i = 0
-                ic = self.type_index(fsi, qti, sigma_v0i, ui)
+                ic = self.type_index(fsi, qti, sigma_v0i, ui, u2i)
             else:
                 depth1 = self.depth.iloc[i - 1]
                 depth2 = depth
@@ -58,7 +64,8 @@ class BeenJeffrey:
                 gamma1 = 20
                 delta_sigma_v0i = self.delta_vertical_stress(depth1, depth2, gamma1)
                 sigma_v0i = self.vertical_stress(sig0i, delta_sigma_v0i)
-                ic = self.type_index(fsi, qti, sigma_v0i, ui)
+                ic = self.type_index(fsi, qti, sigma_v0i, ui, u2i)
+
                 gamma2 = self.get_gamma(ic, depth)
                 ii = 0
                 max_it = 5
@@ -66,7 +73,7 @@ class BeenJeffrey:
                     gamma1 = gamma2
                     delta_sigma_v0i = self.delta_vertical_stress(depth1, depth2, gamma1)
                     sigma_v0i = self.vertical_stress(sig0i, delta_sigma_v0i)
-                    ic = self.type_index(fsi, qti, sigma_v0i, ui)
+                    ic = self.type_index(fsi, qti, sigma_v0i, ui, u2i)
                     gamma2 = self.get_gamma(ic, depth)
                     ii += 1
 
@@ -81,11 +88,11 @@ class BeenJeffrey:
             soil_type_been.append(soil_type)
         df_Ic = pd.DataFrame(Ic, columns=['Ic'])
         df_soil_type = pd.DataFrame(soil_type_been, columns=['soil_type_been_jeffrey'])
-        df_robertson = pd.concat([df_Ic, df_soil_type], axis=1, sort=False)
+        df_been = pd.concat([df_Ic, df_soil_type], axis=1, sort=False)
         df_u = pd.DataFrame(u, columns=['hydrostatic_pore_pressure'])
         df_Qt = pd.DataFrame(series_Qt, columns=['normalized_Qt'])
         df_Fr = pd.DataFrame(series_Fr, columns=['normalized_Fr'])
-        self.df_complete = pd.concat([self.gef.df, df_u, df_robertson, df_Qt, df_Fr], axis=1, sort=False)
+        self.df_complete = pd.concat([self.gef.df, df_u, df_been, df_Qt, df_Fr], axis=1, sort=False)
         return self.df_complete
 
     @staticmethod
@@ -101,7 +108,7 @@ class BeenJeffrey:
     @staticmethod
     def type_index_to_gamma(ic):
         gamma = None
-        if ic > 3.6:
+        if ic > 3.22:
             gamma = 11
         elif 2.76 < ic <= 3.22:
             gamma = 16
@@ -118,7 +125,7 @@ class BeenJeffrey:
     @staticmethod
     def type_index_to_gamma_sat(ic):
         gamma_sat = None
-        if ic > 3.6:
+        if ic > 3.22:
             gamma_sat = 11
         elif 2.76 < ic <= 3.22:
             gamma_sat = 16
@@ -142,7 +149,7 @@ class BeenJeffrey:
     @staticmethod
     def type_index_to_soil_type(ic):
         soil_type = None
-        if ic > 3.6:
+        if ic > 3.22:
             soil_type = 'Peat'
         elif 2.76 < ic <= 3.22:
             soil_type = 'Clays'
@@ -187,17 +194,14 @@ class BeenJeffrey:
         sigma_v0 = sig0 + delta_sigma_v0
         return sigma_v0
 
-    def excess_pore_pressure_ratio(self, qt, sigma_v0, u):
-        if'u2' in self.gef.df.columns:
-            u2 = self.gef.df['u2']
-            return (u2 - u) / (qt - sigma_v0)
-        else:
-            raise SystemExit("ERROR: u2 not defined in .gef file, change classifier")
+    @staticmethod
+    def excess_pore_pressure_ratio(qt, sigma_v0, u, u2):
+        return (u2 - u) / (qt - sigma_v0)
 
-    def type_index(self, fs, qt, sigma_v0, u):
+    def type_index(self, fs, qt, sigma_v0, u, u2):
         Qt = self.normalized_cone_resistance(qt, sigma_v0, u)
         Fr = self.normalized_friction_ratio(fs, qt, sigma_v0)
-        Bq = self.excess_pore_pressure_ratio(qt, sigma_v0, u)
+        Bq = self.excess_pore_pressure_ratio(qt, sigma_v0, u, u2)
         I_c = ((3 - np.log10(Qt*(1-Bq)+1)) ** 2 + (1.5 + 1.3*np.log10(Fr)) ** 2) ** 0.5
         return I_c
 
