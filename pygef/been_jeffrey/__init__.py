@@ -202,6 +202,9 @@ class BeenJeffrey:
         Qt = self.normalized_cone_resistance(qt, sigma_v0, u)
         Fr = self.normalized_friction_ratio(fs, qt, sigma_v0)
         Bq = self.excess_pore_pressure_ratio(qt, sigma_v0, u, u2)
-        I_c = ((3 - np.log10(Qt*(1-Bq)+1)) ** 2 + (1.5 + 1.3*np.log10(Fr)) ** 2) ** 0.5
+        if Qt*(1-Bq)+1 > 0:
+            I_c = ((3 - np.log10(Qt * (1 - Bq) + 1)) ** 2 + (1.5 + 1.3 * np.log10(Fr)) ** 2) ** 0.5
+        else:
+            I_c = ((3 - np.log10(1)) ** 2 + (1.5 + 1.3 * np.log10(Fr)) ** 2) ** 0.5
         return I_c
 
