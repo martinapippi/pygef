@@ -102,7 +102,7 @@ class BeenJeffrey:
             if z <= water_level:
                 hydrostatic_water_pressure.append(0)
             else:
-                hydrostatic_water_pressure.append((z - water_level) * 9.81)
+                hydrostatic_water_pressure.append((z - water_level) * 9.81)  # kN/m3 = kPa
         return hydrostatic_water_pressure
 
     @staticmethod
@@ -118,7 +118,7 @@ class BeenJeffrey:
             gamma = 18
         elif 1.25 < ic <= 1.80:
             gamma = 18
-        elif ic < 1.25:
+        elif ic <= 1.25:
             gamma = 18
         return gamma
 
@@ -135,7 +135,7 @@ class BeenJeffrey:
             gamma_sat = 19
         elif 1.25 < ic <= 1.80:
             gamma_sat = 20
-        elif ic < 1.25:
+        elif ic <= 1.25:
             gamma_sat = 20
         return gamma_sat
 
@@ -159,7 +159,7 @@ class BeenJeffrey:
             soil_type = 'Silty sand to sandy silt'
         elif 1.25 < ic <= 1.80:
             soil_type = 'Sands: clean sand to silty'
-        elif ic < 1.25:
+        elif ic <= 1.25:
             soil_type = 'Gravelly sands'
         return soil_type
 
@@ -196,7 +196,7 @@ class BeenJeffrey:
 
     @staticmethod
     def excess_pore_pressure_ratio(qt, sigma_v0, u, u2):
-        return (u2 - u) / (qt - sigma_v0)
+        return (u2 - u * (10 ** -3)) / (qt - sigma_v0 * (10 ** -3))
 
     def type_index(self, fs, qt, sigma_v0, u, u2):
         Qt = self.normalized_cone_resistance(qt, sigma_v0, u)
